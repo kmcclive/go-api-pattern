@@ -1,4 +1,4 @@
-module github.com/kmcclive/go-api-pattern
+module github.com/kmcclive/goapipattern
 
 go 1.22.2
 
