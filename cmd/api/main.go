@@ -13,5 +13,5 @@ func main() {
 	}
 
 	// Migrate the schema
-	db.AutoMigrate(&goapipattern.Manufacturer{})
+	db.AutoMigrate(&goapipattern.Manufacturer{}, &goapipattern.Product{})
 }
