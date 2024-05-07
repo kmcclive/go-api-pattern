@@ -24,12 +24,12 @@ func (c *ManufacturerController) Create(ctx *gin.Context) {
 	var manufacturer goapipattern.Manufacturer
 
 	if err := ctx.ShouldBind(&manufacturer); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, NewError(err.Error()))
 		return
 	}
 
 	if err := c.service.Create(&manufacturer); err != nil {
-		ctx.Error(err)
+		ctx.AbortWithError(http.StatusInternalServerError, err)
 	}
 
 	ctx.JSON(http.StatusOK, manufacturer)
@@ -40,11 +40,20 @@ func (c *ManufacturerController) Delete(ctx *gin.Context) {
 
 	id, err := strconv.ParseUint(idString, 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, NewError(err.Error()))
 		return
 	}
 
-	c.service.Delete(uint(id))
+	if err := c.service.Delete(uint(id)); err != nil {
+		if errors.Is(err, goapipattern.ErrNotFound) {
+			ctx.AbortWithStatusJSON(http.StatusNotFound, NewError(
+				fmt.Sprintf("A manufacturer with id %v was not found", id),
+			))
+		} else {
+			ctx.AbortWithError(http.StatusInternalServerError, err)
+		}
+		return
+	}
 
 	ctx.Status(http.StatusNoContent)
 }
@@ -54,19 +63,19 @@ func (c *ManufacturerController) FetchByID(ctx *gin.Context) {
 
 	id, err := strconv.ParseUint(idString, 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, NewError(err.Error()))
 		return
 	}
 
 	manufacturer, err := c.service.FetchByID(uint(id))
 	if err != nil {
-		ctx.Error(err)
-		return
-	}
-	if manufacturer == nil {
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"error": fmt.Sprintf("A manufacturer with id %v was not found", id),
-		})
+		if errors.Is(err, goapipattern.ErrNotFound) {
+			ctx.AbortWithStatusJSON(http.StatusNotFound, NewError(
+				fmt.Sprintf("A manufacturer with id %v was not found", id),
+			))
+		} else {
+			ctx.AbortWithError(http.StatusInternalServerError, err)
+		}
 		return
 	}
 
@@ -76,7 +85,7 @@ func (c *ManufacturerController) FetchByID(ctx *gin.Context) {
 func (c *ManufacturerController) List(ctx *gin.Context) {
 	manufacturers, err := c.service.List()
 	if err != nil {
-		ctx.Error(err)
+		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -88,14 +97,14 @@ func (c *ManufacturerController) Update(ctx *gin.Context) {
 
 	id, err := strconv.ParseUint(idString, 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, NewError(err.Error()))
 		return
 	}
 
 	var manufacturer goapipattern.Manufacturer
 
 	if err := ctx.ShouldBind(&manufacturer); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, NewError(err.Error()))
 		return
 	}
 
@@ -103,11 +112,11 @@ func (c *ManufacturerController) Update(ctx *gin.Context) {
 
 	if err := c.service.Update(&manufacturer); err != nil {
 		if errors.Is(err, goapipattern.ErrNotFound) {
-			ctx.JSON(http.StatusNotFound, gin.H{
-				"error": fmt.Sprintf("A manufacturer with id %v was not found", id),
-			})
+			ctx.AbortWithStatusJSON(http.StatusNotFound, NewError(
+				fmt.Sprintf("A manufacturer with id %v was not found", id),
+			))
 		} else {
-			ctx.Error(err)
+			ctx.AbortWithError(http.StatusInternalServerError, err)
 		}
 		return
 	}

@@ -22,14 +22,20 @@ func (s *ManufacturerService) Create(manufacturer *goapipattern.Manufacturer) er
 }
 
 func (s *ManufacturerService) Delete(id uint) error {
-	return s.db.Delete(&goapipattern.Manufacturer{}, id).Error
+	var manufacturer goapipattern.Manufacturer
+
+	if resp := s.db.First(&manufacturer, id); errors.Is(resp.Error, gorm.ErrRecordNotFound) {
+		return goapipattern.ErrNotFound
+	}
+
+	return s.db.Delete(&manufacturer).Error
 }
 
 func (s *ManufacturerService) FetchByID(id uint) (*goapipattern.Manufacturer, error) {
 	var result goapipattern.Manufacturer
 
 	if resp := s.db.First(&result, id); errors.Is(resp.Error, gorm.ErrRecordNotFound) {
-		return nil, nil
+		return nil, goapipattern.ErrNotFound
 	}
 
 	return &result, nil
