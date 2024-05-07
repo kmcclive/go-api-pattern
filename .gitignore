@@ -21,4 +21,4 @@
 go.work
 
 # SQLite database
-cmd/api/catalog.db
+cmd/http_server/catalog.db
