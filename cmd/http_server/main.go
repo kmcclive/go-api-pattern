@@ -31,5 +31,16 @@ func main() {
 		manufacturerGroup.PUT("/:id", manufacturerController.Update)
 	}
 
+	productService := sql.NewProductService(db, manufacturerService)
+	productController := http.NewProductController(productService)
+	productGroup := r.Group("/products")
+	{
+		productGroup.GET("", productController.List)
+		productGroup.POST("", productController.Create)
+		productGroup.DELETE("/:id", productController.Delete)
+		productGroup.GET("/:id", productController.FetchByID)
+		productGroup.PUT("/:id", productController.Update)
+	}
+
 	r.Run()
 }

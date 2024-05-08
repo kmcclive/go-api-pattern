@@ -30,6 +30,7 @@ func (c *ManufacturerController) Create(ctx *gin.Context) {
 
 	if err := c.service.Create(&manufacturer); err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
+		return
 	}
 
 	ctx.JSON(http.StatusOK, manufacturer)

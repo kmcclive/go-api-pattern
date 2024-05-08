@@ -5,5 +5,6 @@ import (
 )
 
 var (
-	ErrNotFound = errors.New("not found")
+	ErrNotFound       = errors.New("not found")
+	ErrParentNotFound = errors.New("parent not found")
 )
