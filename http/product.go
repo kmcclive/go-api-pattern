@@ -102,7 +102,7 @@ func (c *ProductController) List(ctx *gin.Context) {
 			return
 		}
 
-		products, err = c.service.SearchByManufacturer(uint(id))
+		products, err = c.service.ListByManufacturer(uint(id))
 	} else {
 		products, err = c.service.List()
 	}

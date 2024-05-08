@@ -68,7 +68,7 @@ func (s *ProductService) List() (*[]goapipattern.Product, error) {
 	return &result, nil
 }
 
-func (s *ProductService) SearchByManufacturer(manufacturerID uint) (*[]goapipattern.Product, error) {
+func (s *ProductService) ListByManufacturer(manufacturerID uint) (*[]goapipattern.Product, error) {
 	criteria := goapipattern.Product{
 		ManufacturerID: manufacturerID,
 	}

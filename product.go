@@ -10,5 +10,5 @@ type Product struct {
 
 type ProductService interface {
 	Service[Product]
-	SearchByManufacturer(manufacturerID uint) (*[]Product, error)
+	ListByManufacturer(manufacturerID uint) (*[]Product, error)
 }
