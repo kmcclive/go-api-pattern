@@ -34,8 +34,11 @@ func (s *ManufacturerService) Delete(id uint) error {
 func (s *ManufacturerService) FetchByID(id uint) (*goapipattern.Manufacturer, error) {
 	var result goapipattern.Manufacturer
 
-	if resp := s.db.First(&result, id); errors.Is(resp.Error, gorm.ErrRecordNotFound) {
-		return nil, goapipattern.ErrNotFound
+	if resp := s.db.First(&result, id); resp.Error != nil {
+		if errors.Is(resp.Error, gorm.ErrRecordNotFound) {
+			return nil, goapipattern.ErrNotFound
+		}
+		return nil, resp.Error
 	}
 
 	return &result, nil
@@ -54,8 +57,11 @@ func (s *ManufacturerService) List() (*[]goapipattern.Manufacturer, error) {
 func (s *ManufacturerService) Update(manufacturer *goapipattern.Manufacturer) error {
 	var original goapipattern.Manufacturer
 
-	if resp := s.db.First(&original, manufacturer.ID); errors.Is(resp.Error, gorm.ErrRecordNotFound) {
-		return goapipattern.ErrNotFound
+	if resp := s.db.First(&original, manufacturer.ID); resp.Error != nil {
+		if errors.Is(resp.Error, gorm.ErrRecordNotFound) {
+			return goapipattern.ErrNotFound
+		}
+		return resp.Error
 	}
 
 	original.Name = manufacturer.Name

@@ -2,50 +2,58 @@ package sql
 
 import (
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-faker/faker/v4"
 	"github.com/kmcclive/goapipattern"
+	"github.com/kmcclive/goapipattern/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 type ManufacturerServiceSuite struct {
 	suite.Suite
 	assert  *assert.Assertions
-	db      *gorm.DB
-	mock    sqlmock.Sqlmock
+	sqlmock sqlmock.Sqlmock
 	service goapipattern.ManufacturerService
 }
 
-func (s *ManufacturerServiceSuite) SetupTest() {
-	require := require.New(s.T())
-
-	conn, mock, err := sqlmock.New()
-	require.NoError(err)
-
-	db, err := gorm.Open(mysql.New(mysql.Config{
-		Conn:                      conn,
-		SkipInitializeWithVersion: true,
-	}), &gorm.Config{})
-	require.NoError(err)
-
-	s.db = db
-	s.mock = mock
-	s.service = NewManufacturerService(db)
-	s.assert = assert.New(s.T())
+func TestManufacturerServiceSuite(t *testing.T) {
+	suite.Run(t, new(ManufacturerServiceSuite))
 }
 
-func (s *ManufacturerServiceSuite) TestFetch() {
+func (s *ManufacturerServiceSuite) SetupTest() {
+	t := s.T()
+
+	db, sql, err := mock.DB()
+	require.NoError(t, err)
+
+	s.assert = assert.New(t)
+	s.sqlmock = sql
+	s.service = NewManufacturerService(db)
+}
+
+func (s *ManufacturerServiceSuite) TestFetch_QueriesForID() {
+	id := mock.Id()
+	s.sqlmock.ExpectQuery("^SELECT (.+) FROM `manufacturers` WHERE `manufacturers`.`id` = ?").
+		WithArgs(id, 1).
+		WillReturnRows(s.newRows())
+
+	s.service.FetchByID(id)
+
+	s.assert.NoError(s.sqlmock.ExpectationsWereMet())
+}
+
+func (s *ManufacturerServiceSuite) TestFetch_WithRow_ReturnsManufacturer() {
 	expected := new(goapipattern.Manufacturer)
 	faker.FakeData(expected)
 	expected.DeletedAt = gorm.DeletedAt{}
-	rows := sqlmock.NewRows([]string{"id", "created_at", "updated_at", "deleted_at", "name"})
-	rows.AddRow(expected.ID, expected.CreatedAt, expected.UpdatedAt, nil, expected.Name)
-	s.mock.ExpectQuery("^SELECT (.+) FROM `manufacturers` WHERE `manufacturers`.`id` = ?").WillReturnRows(rows)
+	rows := s.newRows()
+	s.addRow(rows, expected.ID, expected.CreatedAt, expected.UpdatedAt, nil, expected.Name)
+	s.sqlmock.ExpectQuery("").WillReturnRows(rows)
 
 	actual, err := s.service.FetchByID(expected.ID)
 
@@ -53,6 +61,36 @@ func (s *ManufacturerServiceSuite) TestFetch() {
 	s.assert.EqualValues(expected, actual)
 }
 
-func TestManufacturerServiceSuite(t *testing.T) {
-	suite.Run(t, new(ManufacturerServiceSuite))
+func (s *ManufacturerServiceSuite) TestFetch_WithoutRow_ReturnsErrNotFound() {
+	s.sqlmock.ExpectQuery("").WillReturnRows(s.newRows())
+
+	actual, err := s.service.FetchByID(mock.Id())
+
+	s.assert.Nil(actual)
+	s.assert.ErrorIs(err, goapipattern.ErrNotFound)
+}
+
+func (s *ManufacturerServiceSuite) TestFetch_WithError_ReturnsError() {
+	expectedErr := mock.Error()
+	s.sqlmock.ExpectQuery("").WillReturnError(expectedErr)
+
+	actual, err := s.service.FetchByID(mock.Id())
+
+	s.assert.Nil(actual)
+	s.assert.ErrorIs(err, expectedErr)
+}
+
+func (s *ManufacturerServiceSuite) newRows() *sqlmock.Rows {
+	return sqlmock.NewRows([]string{"id", "created_at", "updated_at", "deleted_at", "name"})
+}
+
+func (s *ManufacturerServiceSuite) addRow(
+	rows *sqlmock.Rows,
+	id uint,
+	createdAt time.Time,
+	updatedAt time.Time,
+	deletedAt *time.Time,
+	name string,
+) {
+	rows.AddRow(id, createdAt, updatedAt, deletedAt, name)
 }
