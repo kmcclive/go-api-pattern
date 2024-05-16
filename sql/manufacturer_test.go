@@ -36,15 +36,70 @@ func (s *ManufacturerServiceSuite) SetupTest() {
 	s.service = NewManufacturerService(db)
 }
 
-func (s *ManufacturerServiceSuite) TestFetch_QueriesForID() {
+func (s *ManufacturerServiceSuite) TestCreate_ExecutesInsert() {
+	manufacturer := goapipattern.Manufacturer{
+		Name: faker.Name(),
+	}
+	s.sqlmock.ExpectBegin()
+	s.sqlmock.ExpectExec("^INSERT INTO `manufacturers`").
+		WithArgs(mock.Any{}, mock.Any{}, mock.Any{}, manufacturer.Name).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	s.sqlmock.ExpectCommit()
+
+	err := s.service.Create(&manufacturer)
+
+	if s.assert.NoError(err) {
+		s.assert.NoError(s.sqlmock.ExpectationsWereMet())
+	}
+}
+
+func (s *ManufacturerServiceSuite) TestCreate_UpdatesModel() {
+	manufacturer := goapipattern.Manufacturer{
+		Name: faker.Name(),
+	}
+	s.sqlmock.ExpectBegin()
+	s.sqlmock.ExpectExec("").
+		WithArgs(mock.Any{}, mock.Any{}, mock.Any{}, mock.Any{}).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	s.sqlmock.ExpectCommit()
+
+	err := s.service.Create(&manufacturer)
+
+	s.assert.NoError(err)
+	s.assert.NotZero(manufacturer.ID)
+	s.assert.NotZero(manufacturer.CreatedAt)
+	s.assert.NotZero(manufacturer.UpdatedAt)
+}
+
+func (s *ManufacturerServiceSuite) TestCreate_WithError_ReturnsError() {
+	manufacturer := goapipattern.Manufacturer{
+		Name: faker.Name(),
+	}
+	expectedErr := mock.Error()
+	s.sqlmock.ExpectBegin()
+	s.sqlmock.ExpectExec("").
+		WithArgs(mock.Any{}, mock.Any{}, mock.Any{}, mock.Any{}).
+		WillReturnError(expectedErr)
+	s.sqlmock.ExpectRollback()
+
+	err := s.service.Create(&manufacturer)
+
+	s.assert.ErrorIs(err, expectedErr)
+}
+
+func (s *ManufacturerServiceSuite) TestFetch_QueriesByID() {
 	id := mock.ID()
+	rows := s.newRows()
+	s.addRow(rows, id, time.Now(), time.Now(), nil, faker.Name())
 	s.sqlmock.ExpectQuery("^SELECT (.+) FROM `manufacturers` WHERE `manufacturers`.`id` = ?").
 		WithArgs(id, 1).
-		WillReturnRows(s.newRows())
+		WillReturnRows(rows)
 
-	s.service.FetchByID(id)
+	_, err := s.service.FetchByID(id)
 
-	s.assert.NoError(s.sqlmock.ExpectationsWereMet())
+	if s.assert.NoError(err) {
+		s.assert.NoError(s.sqlmock.ExpectationsWereMet())
+	}
 }
 
 func (s *ManufacturerServiceSuite) TestFetch_WithRow_ReturnsManufacturer() {
