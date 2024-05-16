@@ -34,6 +34,6 @@ func Error() error {
 	return errors.New(faker.Sentence())
 }
 
-func Id() uint {
+func ID() uint {
 	return uint(rand.Uint32())
 }

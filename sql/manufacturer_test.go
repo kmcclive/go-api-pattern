@@ -37,7 +37,7 @@ func (s *ManufacturerServiceSuite) SetupTest() {
 }
 
 func (s *ManufacturerServiceSuite) TestFetch_QueriesForID() {
-	id := mock.Id()
+	id := mock.ID()
 	s.sqlmock.ExpectQuery("^SELECT (.+) FROM `manufacturers` WHERE `manufacturers`.`id` = ?").
 		WithArgs(id, 1).
 		WillReturnRows(s.newRows())
@@ -64,7 +64,7 @@ func (s *ManufacturerServiceSuite) TestFetch_WithRow_ReturnsManufacturer() {
 func (s *ManufacturerServiceSuite) TestFetch_WithoutRow_ReturnsErrNotFound() {
 	s.sqlmock.ExpectQuery("").WillReturnRows(s.newRows())
 
-	actual, err := s.service.FetchByID(mock.Id())
+	actual, err := s.service.FetchByID(mock.ID())
 
 	s.assert.Nil(actual)
 	s.assert.ErrorIs(err, goapipattern.ErrNotFound)
@@ -74,7 +74,7 @@ func (s *ManufacturerServiceSuite) TestFetch_WithError_ReturnsError() {
 	expectedErr := mock.Error()
 	s.sqlmock.ExpectQuery("").WillReturnError(expectedErr)
 
-	actual, err := s.service.FetchByID(mock.Id())
+	actual, err := s.service.FetchByID(mock.ID())
 
 	s.assert.Nil(actual)
 	s.assert.ErrorIs(err, expectedErr)
