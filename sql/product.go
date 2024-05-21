@@ -59,22 +59,27 @@ func (s *ProductService) FetchByID(id uint) (*goapipattern.Product, error) {
 }
 
 func (s *ProductService) List() (*[]goapipattern.Product, error) {
-	var result []goapipattern.Product
-
-	if resp := s.db.Preload(clause.Associations).Find(&result); resp.Error != nil {
-		return nil, resp.Error
-	}
-
-	return &result, nil
+	return s.list(nil)
 }
 
 func (s *ProductService) ListByManufacturer(manufacturerID uint) (*[]goapipattern.Product, error) {
 	criteria := goapipattern.Product{
 		ManufacturerID: manufacturerID,
 	}
+
+	return s.list(&criteria)
+}
+
+func (s *ProductService) list(criteria *goapipattern.Product) (*[]goapipattern.Product, error) {
+	db := s.db.Preload(clause.Associations)
+
+	if criteria != nil {
+		db = db.Where(criteria)
+	}
+
 	var result []goapipattern.Product
 
-	if resp := s.db.Preload(clause.Associations).Where(criteria).Find(&result); resp.Error != nil {
+	if resp := db.Find(&result); resp.Error != nil {
 		return nil, resp.Error
 	}
 
